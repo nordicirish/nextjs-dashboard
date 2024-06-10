@@ -31,6 +31,10 @@ export default function Search({ placeholder }: { placeholder: string }) {
         onChange={(e) => {
           handleSearch(e.target.value);
         }}
+        //To ensure the input field is in sync with the URL and will be populated when sharing, pass a defaultValue to input by reading from searchParams
+        
+        defaultValue={searchParams.get('query')?.toString()}
+        
       />
       <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
     </div>
