@@ -13,7 +13,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
 
     const params = new URLSearchParams(searchParams);
     // set the params string based on the user’s input. If the input is empty delete it
-
+    params.set('page', '1');
     if (term) {
       params.set('query', term);
     } else {
