@@ -5,7 +5,7 @@ export const authConfig = {
     // the user will be redirected to the custom login page, rather than the NextAuth.js default page
     signIn: '/login',
   },
-  //middleware to prevent unauthenticated users from accessing protected routes (eg. /dashboard)
+  //logic to prevent unauthenticated users from accessing protected routes (eg. /dashboard)
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
