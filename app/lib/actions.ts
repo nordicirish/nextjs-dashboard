@@ -131,7 +131,6 @@ export async function deleteInvoice(id: string) {
     //revalidate path inside the try block as no redirect is needed if successful
     revalidatePath('/dashboard/invoices');
   } catch (error) {
-    return;
-    message: 'Database Error: Failed to delete invoice.';
+    return { message: 'Database Error: Failed to delete invoice.' };
   }
 }
