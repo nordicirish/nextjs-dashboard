@@ -28,7 +28,8 @@ const CreateInvoice = FormSchema.omit({ id: true, date: true });
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
 // This is temporary until @types/react-dom is updated
-export type State = {
+
+export type InvoiceState = {
   errors?: {
     customerId?: string[];
     amount?: string[];
@@ -55,7 +56,10 @@ export async function authenticate(
     throw error;
   }
 }
-export async function createInvoice(prevState: State, formData: FormData) {
+export async function createInvoice(
+  prevState: InvoiceState,
+  formData: FormData,
+) {
   const validatedFields = CreateInvoice.safeParse({
     customerId: formData.get('customerId'),
     amount: formData.get('amount'),
@@ -92,7 +96,7 @@ export async function createInvoice(prevState: State, formData: FormData) {
 
 export async function updateInvoice(
   id: string,
-  prevState: State,
+  prevState: InvoiceState,
   formData: FormData,
 ) {
   const validatedFields = UpdateInvoice.safeParse({
