@@ -22,11 +22,22 @@ const InvoiceFormSchema = z.object({
   }),
   date: z.string(),
 });
+const CustomerFormSchema = z.object({
+  id: z.string(),
+  name: z.string({
+    required_error: 'Please enter a name for the customer.',
+  }),
+  email: z.string().email({
+    message: 'Please enter a valid email address for the customer.',
+  }),
+  image_url: z.string(),
+});
 // omit id and date fields
 const CreateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 // Use Zod to update the expected types
 const UpdateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
-
+const CreateCustomer = CustomerFormSchema.omit({ id: true });
+const UpdateCustomer = CustomerFormSchema.omit({ id: true });
 // This is temporary until @types/react-dom is updated
 
 export type InvoiceState = {
@@ -63,6 +74,40 @@ export async function authenticate(
     }
     throw error;
   }
+}
+
+export async function createCustomer(
+  prevState: CustomerState,
+  formData: FormData,
+) {
+  const validatedFields = CreateCustomer.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    image_url: formData.get('image_url'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Customer.',
+    };
+  }
+
+  const { name, email, image_url } = validatedFields.data;
+
+  try {
+    await sql`
+      INSERT INTO customers (name, email, image_url)
+      VALUES (${name}, ${email}, ${image_url})
+    `;
+  } catch (error) {
+    return {
+      message: 'Database Error: Failed to Create Customer.',
+    };
+  }
+
+  revalidatePath('/dashboard/customers');
+  redirect('/dashboard/customers');
 }
 export async function createInvoice(
   prevState: InvoiceState,
