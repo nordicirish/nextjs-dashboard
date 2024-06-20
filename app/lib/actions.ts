@@ -37,6 +37,14 @@ export type InvoiceState = {
   };
   message?: string | null;
 };
+export type CustomerState = {
+  errors?: {
+    name?: string[];
+    email?: string[];
+    image_url?: string[];
+  };
+  message?: string | null;
+};
 //connect the auth logic with your login form
 export async function authenticate(
   prevState: string | undefined,
