@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-
 import { Button } from '@/app/ui/button';
 import { createCustomer } from '@/app/lib/actions';
 import { useFormState } from 'react-dom';
@@ -77,8 +76,8 @@ export default function Form() {
           />
           {state.errors?.image &&
             state.errors.image.map((error) => (
-              <p className="mt-2 text-sm text-red-500" key={error.name}>
-                {error.name}
+              <p className="mt-2 text-sm text-red-500" key={error}>
+                {error}
               </p>
             ))}
         </div>

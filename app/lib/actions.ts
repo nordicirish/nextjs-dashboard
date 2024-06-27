@@ -55,7 +55,7 @@ export type CustomerState = {
   errors?: {
     name?: string[];
     email?: string[];
-    image?: File[];
+    image?: string[];
   };
   message?: string | null;
 };
@@ -90,10 +90,10 @@ export async function createCustomer(
 
   if (!validatedFields.success) {
     return {
+      errors: validatedFields.error.flatten().fieldErrors,
       message: 'Missing Fields. Failed to Create Customer.',
     };
   }
-
   const { name, email } = validatedFields.data;
   const image = formData.get('image');
 
@@ -102,25 +102,21 @@ export async function createCustomer(
       message: 'Invalid image file.',
     };
   }
-
   try {
     const blob = await put(image.name, image, { access: 'public' });
     const image_url = blob.url;
     console.log('Blob URL:', image_url);
-    // Insert customer into database and handle response
-    const result = await insertCustomer(name, email, image_url);
-    // Perform revalidation of the customer page after creating a new customer
-    revalidatePath('/dashboard/customers');
-    // redirect('/dashboard/customers');
-    return result;
+    await insertCustomer(name, email, image_url);
   } catch (error: any) {
     console.error('Error creating customer:', error);
-    return {
-      message:
-        error.message || 'Failed to create customer due to unknown error.',
-    };
+    throw error;
   }
+
+  //revalidate the customer list and redirect to the customer list page
+  revalidatePath('/dashboard/customers');
+  redirect('/dashboard/customers/page=${lastPage}');
 }
+
 export async function createInvoice(
   prevState: InvoiceState,
   formData: FormData,
