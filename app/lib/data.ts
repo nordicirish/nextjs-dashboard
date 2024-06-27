@@ -188,6 +188,26 @@ export async function fetchCustomersPages(query: string) {
     throw new Error('Failed to fetch total number of customers.');
   }
 }
+export async function insertCustomer(
+  name: string,
+  email: string,
+  imageUrl: string,
+) {
+  try {
+    await sql`
+      INSERT INTO customers (name, email, image_url)
+      VALUES (${name}, ${email}, ${imageUrl})
+    `;
+      return {
+      message: `Customer ${name} created successfully.`,
+      imageUrl: imageUrl,
+    };
+  } catch (dbError) {
+    console.error('Database Error:', dbError);
+    throw new Error('Database Error: Failed to Create Customer.');
+  }
+  
+}
 
 export async function fetchInvoicesPages(query: string) {
   try {
