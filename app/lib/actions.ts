@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { put } from '@vercel/blob';
+import { insertCustomer } from './data';
 
 const InvoiceFormSchema = z.object({
   id: z.string(),
@@ -22,6 +24,7 @@ const InvoiceFormSchema = z.object({
   }),
   date: z.string(),
 });
+
 const CustomerFormSchema = z.object({
   id: z.string(),
   name: z.string({
@@ -30,14 +33,14 @@ const CustomerFormSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address for the customer.',
   }),
-  image_url: z.string(),
+  image: z.instanceof(File).nullable(), // Validate the image field as a File object ,
 });
 // omit id and date fields
 const CreateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 // Use Zod to update the expected types
 const UpdateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 const CreateCustomer = CustomerFormSchema.omit({ id: true });
-const UpdateCustomer = CustomerFormSchema.omit({ id: true });
+// const UpdateCustomer = CustomerFormSchema.omit({ id: true });
 // This is temporary until @types/react-dom is updated
 
 export type InvoiceState = {
@@ -52,7 +55,7 @@ export type CustomerState = {
   errors?: {
     name?: string[];
     email?: string[];
-    image_url?: string[];
+    image?: File[];
   };
   message?: string | null;
 };
@@ -75,7 +78,6 @@ export async function authenticate(
     throw error;
   }
 }
-
 export async function createCustomer(
   prevState: CustomerState,
   formData: FormData,
@@ -83,31 +85,41 @@ export async function createCustomer(
   const validatedFields = CreateCustomer.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
-    image_url: formData.get('image_url'),
+    image: formData.get('image'),
   });
 
   if (!validatedFields.success) {
     return {
-      errors: validatedFields.error.flatten().fieldErrors,
       message: 'Missing Fields. Failed to Create Customer.',
     };
   }
 
-  const { name, email, image_url } = validatedFields.data;
+  const { name, email } = validatedFields.data;
+  const image = formData.get('image');
 
-  try {
-    await sql`
-      INSERT INTO customers (name, email, image_url)
-      VALUES (${name}, ${email}, ${image_url})
-    `;
-  } catch (error) {
+  if (!(image instanceof File)) {
     return {
-      message: 'Database Error: Failed to Create Customer.',
+      message: 'Invalid image file.',
     };
   }
 
-  revalidatePath('/dashboard/customers');
-  redirect('/dashboard/customers');
+  try {
+    const blob = await put(image.name, image, { access: 'public' });
+    const image_url = blob.url;
+    console.log('Blob URL:', image_url);
+    // Insert customer into database and handle response
+    const result = await insertCustomer(name, email, image_url);
+    // Perform revalidation of the customer page after creating a new customer
+    revalidatePath('/dashboard/customers');
+    // redirect('/dashboard/customers');
+    return result;
+  } catch (error: any) {
+    console.error('Error creating customer:', error);
+    return {
+      message:
+        error.message || 'Failed to create customer due to unknown error.',
+    };
+  }
 }
 export async function createInvoice(
   prevState: InvoiceState,
