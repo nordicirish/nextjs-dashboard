@@ -1,6 +1,7 @@
 import { sql } from '@vercel/postgres';
 import {
   CustomersTableType,
+  CustomerForm,
   InvoiceForm,
   InvoicesTable,
   LatestInvoiceRaw,
@@ -198,7 +199,7 @@ export async function insertCustomer(
       INSERT INTO customers (name, email, image_url)
       VALUES (${name}, ${email}, ${imageUrl})
     `;
-      return {
+    return {
       message: `Customer ${name} created successfully.`,
       imageUrl: imageUrl,
     };
@@ -206,7 +207,6 @@ export async function insertCustomer(
     console.error('Database Error:', dbError);
     throw new Error('Database Error: Failed to Create Customer.');
   }
-  
 }
 
 export async function fetchInvoicesPages(query: string) {
@@ -253,7 +253,27 @@ export async function fetchInvoiceById(id: string) {
     throw new Error('Failed to fetch invoice.');
   }
 }
+export async function fetchCustomerById(id: string) {
+  try {
+    const data = await sql<CustomerForm>`
+  SELECT
+    customers.id,
+    customers.name,
+    customers.email,
+    customers.image_url
+    FROM customers
+    WHERE customers.id = ${id};
+  `;
 
+    const customer = data.rows.map((customer) => ({
+      ...customer,
+    }));
+    return customer[0];
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch invoice.');
+  }
+}
 export async function fetchCustomers() {
   try {
     // const data = await sql<CustomerField>
