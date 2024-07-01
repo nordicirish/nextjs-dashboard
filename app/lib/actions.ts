@@ -40,7 +40,7 @@ const CreateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 // Use Zod to update the expected types
 const UpdateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 const CreateCustomer = CustomerFormSchema.omit({ id: true });
-// const UpdateCustomer = CustomerFormSchema.omit({ id: true });
+const UpdateCustomer = CustomerFormSchema.omit({ id: true });
 // This is temporary until @types/react-dom is updated
 
 export type InvoiceState = {
@@ -78,6 +78,17 @@ export async function authenticate(
     throw error;
   }
 }
+async function uploadImage(image: File): Promise<string> {
+  try {
+    const blob = await put(image.name, image, { access: 'public' });
+    const image_url = blob.url;
+    console.log('Blob URL:', image_url);
+    return image_url;
+  } catch (error: any) {
+    console.error('Error uploading image:', error);
+    throw new Error('Image upload failed');
+  }
+}
 export async function createCustomer(
   prevState: CustomerState,
   formData: FormData,
@@ -102,19 +113,17 @@ export async function createCustomer(
       message: 'Invalid image file.',
     };
   }
+
   try {
-    const blob = await put(image.name, image, { access: 'public' });
-    const image_url = blob.url;
-    console.log('Blob URL:', image_url);
+    const image_url = await uploadImage(image);
     await insertCustomer(name, email, image_url);
   } catch (error: any) {
     console.error('Error creating customer:', error);
     throw error;
   }
-
-  //revalidate the customer list and redirect to the customer list page
+  // Revalidate the customer list and redirect to the customer list page
   revalidatePath('/dashboard/customers');
-  redirect('/dashboard/customers/page=${lastPage}');
+  redirect(`/dashboard/customers`);
 }
 
 export async function createInvoice(
@@ -198,4 +207,47 @@ export async function deleteInvoice(id: string) {
   } catch (error) {
     return { message: 'Database Error: Failed to delete invoice.' };
   }
+}
+export async function updateCustomer(
+  id: string,
+  prevState: CustomerState,
+  formData: FormData,
+) {
+  const validatedFields = UpdateCustomer.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    image: formData.get('image'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Customer.',
+    };
+  }
+  const { name, email } = validatedFields.data;
+  const image = formData.get('image');
+  if (!(image instanceof File)) {
+    return {
+      message: 'Invalid image file.',
+    };
+  }
+  try {
+    const image_url = await uploadImage(image);
+    try {
+      await sql`
+        UPDATE customers
+        SET name = ${name}, email = ${email}, image_url = ${image_url}
+        WHERE id = ${id}
+      `;
+    } catch (error) {
+      return { message: 'Database Error: Failed to update customer.' };
+    }
+  } catch (error: any) {
+    console.error('Error editing customer:', error);
+    throw error;
+  }
+
+  revalidatePath('/dashboard/customers');
+  redirect('/dashboard/customers');
 }
