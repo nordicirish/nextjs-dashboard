@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { fetchFilteredCustomers } from '@/app/lib/data';
-import { UpdateCustomer } from './buttons';
+import { UpdateCustomer, DeleteCustomer } from './buttons';
 
 export default async function CustomersTable({
   query,
@@ -41,6 +41,10 @@ export default async function CustomersTable({
                           {customer.email}
                         </p>
                       </div>
+                      <div className="flex justify-end gap-3">
+                        <UpdateCustomer id={customer.id} />
+                        <DeleteCustomer id={customer.id} />
+                      </div>
                     </div>
                     <div className="flex w-full items-center justify-between border-b py-5">
                       <div className="flex w-1/2 flex-col">
@@ -54,9 +58,6 @@ export default async function CustomersTable({
                     </div>
                     <div className="pt-4 text-sm">
                       <p>{customer.total_invoices} invoices</p>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <UpdateCustomer id={customer.id} />
                     </div>
                   </div>
                 ))}
@@ -81,6 +82,9 @@ export default async function CustomersTable({
                     </th>
                     <th scope="col" className="relative py-3 pl-6 pr-3">
                       <span className="sr-only">Edit</span>
+                    </th>
+                    <th scope="col" className="relative py-3 pl-6 pr-3">
+                      <span className="sr-only">Delete</span>
                     </th>
                   </tr>
                 </thead>
@@ -115,6 +119,7 @@ export default async function CustomersTable({
                       <td className="whitespace-nowrap py-3 pl-6 pr-3">
                         <div className="flex justify-end gap-3">
                           <UpdateCustomer id={customer.id} />
+                          <DeleteCustomer id={customer.id} />
                         </div>
                       </td>
                     </tr>
