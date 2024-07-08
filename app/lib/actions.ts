@@ -33,6 +33,7 @@ const CustomerFormSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address for the customer.',
   }),
+  image_url: z.string(),
   image: z.instanceof(File).nullable(), // Validate the image field as a File object ,
 });
 // omit id and date fields
@@ -40,8 +41,12 @@ const CreateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 // Use Zod to update the expected types
 const UpdateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 const CreateCustomer = CustomerFormSchema.omit({ id: true });
-const UpdateCustomer = CustomerFormSchema.omit({ id: true });
-// This is temporary until @types/react-dom is updated
+// omit image_url and image fields from the expected types until image updating is implemented
+const UpdateCustomer = CustomerFormSchema.omit({
+  id: true,
+  image_url: true,
+  image: true,
+});
 
 export type InvoiceState = {
   errors?: {
@@ -56,6 +61,7 @@ export type CustomerState = {
     name?: string[];
     email?: string[];
     image?: string[];
+    image_url?: string[];
   };
   message?: string | null;
 };
@@ -121,6 +127,7 @@ export async function createCustomer(
     console.error('Error creating customer:', error);
     throw error;
   }
+
   // Revalidate the customer list and redirect to the customer list page
   revalidatePath('/dashboard/customers');
   redirect(`/dashboard/customers`);
@@ -216,7 +223,8 @@ export async function updateCustomer(
   const validatedFields = UpdateCustomer.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
-    image: formData.get('image'),
+    // image_url: formData.get('image_url'),
+    // image: formData.get('image'),
   });
 
   if (!validatedFields.success) {
@@ -226,28 +234,29 @@ export async function updateCustomer(
     };
   }
   const { name, email } = validatedFields.data;
-  const image = formData.get('image');
-  if (!(image instanceof File)) {
-    return {
-      message: 'Invalid image file.',
-    };
-  }
+  // const image = formData.get('image');
+  // if (!(image instanceof File)) {
+  //   return {
+  //     message: 'Invalid image file.',
+  //   };
+  // }
+  // try {
+  //   const blob = await put(image.name, image, { access: 'public' });
+  //   const image_url = blob.url;
+  //   console.log('Blob URL:', image_url);
   try {
-    const image_url = await uploadImage(image);
-    try {
-      await sql`
-        UPDATE customers
-        SET name = ${name}, email = ${email}, image_url = ${image_url}
-        WHERE id = ${id}
-      `;
-    } catch (error) {
-      return { message: 'Database Error: Failed to update customer.' };
-    }
-  } catch (error: any) {
-    console.error('Error editing customer:', error);
-    throw error;
+    await sql`
+    UPDATE customers
+    SET name = ${name}, email = ${email} 
+    WHERE id = ${id}
+  `;
+  } catch (error) {
+    return { message: 'Database Error: Failed to update customer.' };
   }
-
+  // } catch (error: any) {
+  //   console.error('Error editing customer:', error);
+  //   throw error;
+  // }
   revalidatePath('/dashboard/customers');
   redirect('/dashboard/customers');
 }
