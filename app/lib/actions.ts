@@ -215,6 +215,29 @@ export async function deleteInvoice(id: string) {
     return { message: 'Database Error: Failed to delete invoice.' };
   }
 }
+export async function deleteCustomer(id: string) {
+  try {
+    await sql`
+      DELETE FROM customers
+      WHERE id = ${id}
+    `;
+
+    // Delete all invoices associated with the customer
+
+    await sql`
+      DELETE FROM invoices
+      WHERE customer_id = ${id}
+    `;
+
+    revalidatePath('/dashboard/customers');
+    revalidatePath('/dashboard/invoices');
+  } catch (error) {
+    return {
+      message: 'Database Error: Failed to delete customer and their invoices.',
+    };
+  }
+}
+
 export async function updateCustomer(
   id: string,
   prevState: CustomerState,
