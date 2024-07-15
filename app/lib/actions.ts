@@ -40,7 +40,7 @@ const CustomerFormSchema = z.object({
 const CreateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 // Use Zod to update the expected types
 const UpdateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
-const CreateCustomer = CustomerFormSchema.omit({ id: true });
+const CreateCustomer = CustomerFormSchema.omit({ id: true, image_url: true });
 // omit image_url and image fields from the expected types until image updating is implemented
 const UpdateCustomer = CustomerFormSchema.omit({
   id: true,
@@ -217,21 +217,49 @@ export async function deleteInvoice(id: string) {
 }
 export async function deleteCustomer(id: string) {
   try {
-    await sql`
-      DELETE FROM customers
-      WHERE id = ${id}
+    console.log('Deleting customer with ID:', id);
+
+    // Check if there are any pending invoices for the customer
+    const { rows: pendingInvoices } = await sql`
+      SELECT 1 as pending FROM invoices
+      WHERE customer_id = ${id} AND status = 'pending'
     `;
 
-    // Delete all invoices associated with the customer
+    console.log(
+      'Pending invoices check:',
+      JSON.stringify(pendingInvoices, null, 2),
+    );
 
+    if (pendingInvoices.length > 0) {
+      console.log('Cannot delete customer due to pending invoices.');
+      return {
+        message: 'Cannot delete customer with pending invoices.',
+        error: true,
+      };
+    }
+
+    // Delete all invoices associated with the customer
     await sql`
       DELETE FROM invoices
       WHERE customer_id = ${id}
     `;
 
+    console.log('Deleted invoices for customer ID:', id);
+
+    // Delete the customer
+    await sql`
+      DELETE FROM customers
+      WHERE id = ${id}
+    `;
+
+    console.log('Deleted customer with ID:', id);
+
+    // Revalidate paths
     revalidatePath('/dashboard/customers');
     revalidatePath('/dashboard/invoices');
+    return { message: 'Customer and their invoices successfully deleted.' };
   } catch (error) {
+    console.error('Error deleting customer:', error);
     return {
       message: 'Database Error: Failed to delete customer and their invoices.',
     };
