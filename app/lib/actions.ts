@@ -130,6 +130,7 @@ export async function createCustomer(
 
   // Revalidate the customer list and redirect to the customer list page
   revalidatePath('/dashboard/customers');
+  revalidatePath('/dashboard/invoices');
   redirect(`/dashboard/customers`);
 }
 
@@ -257,6 +258,9 @@ export async function deleteCustomer(id: string) {
     // Revalidate paths
     revalidatePath('/dashboard/customers');
     revalidatePath('/dashboard/invoices');
+
+    // Redirect to dashboard/customers
+    redirect('/dashboard/customers');
     return { message: 'Customer and their invoices successfully deleted.' };
   } catch (error) {
     console.error('Error deleting customer:', error);
