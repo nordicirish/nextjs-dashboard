@@ -1,5 +1,4 @@
 'use client';
-
 import Link from 'next/link';
 import { Button } from '@/app/ui/button';
 import { createCustomer } from '@/app/lib/actions';
@@ -10,7 +9,7 @@ export default function Form() {
   const [state, dispatch] = useFormState(createCustomer, initialState);
 
   return (
-    <form action={dispatch} encType="multipart/form-data">
+    <form action={dispatch}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Customer Name */}
         <div className="mb-4">
@@ -22,11 +21,14 @@ export default function Form() {
           </label>
           <input
             type="text"
-            id="name"
-            name="name"
+            id="username"
+            name="username"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-            required
+            aria-describedby="name-error"
+            placeholder="Enter the customer name"
           />
+        </div>
+        <div id="name-error" aria-live="polite" aria-atomic="true">
           {state.errors?.name &&
             state.errors.name.map((error) => (
               <p className="mt-2 text-sm text-red-500" key={error}>
@@ -48,10 +50,13 @@ export default function Form() {
             id="email"
             name="email"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-            required
+            aria-describedby="email-error"
+            placeholder="Enter the customer email"
           />
+        </div>
+        <div id="email-error" aria-live="polite" aria-atomic="true">
           {state.errors?.email &&
-            state.errors.email.map((error) => (
+            state.errors.email.map((error: string) => (
               <p className="mt-2 text-sm text-red-500" key={error}>
                 {error}
               </p>
@@ -72,8 +77,10 @@ export default function Form() {
             name="image"
             accept="image/*"
             className="mt-1 block w-full"
-            required
+            aria-describedby="image-error"
           />
+        </div>
+        <div id="image-error" aria-live="polite" aria-atomic="true">
           {state.errors?.image &&
             state.errors.image.map((error) => (
               <p className="mt-2 text-sm text-red-500" key={error}>
@@ -91,13 +98,8 @@ export default function Form() {
           </Link>
           <Button type="submit">Create Customer</Button>
         </div>
-
-        <div id="status-error" aria-live="polite" aria-atomic="true">
-          {state.message && (
-            <p className="mt-2 text-sm text-red-500">{state.message}</p>
-          )}
-        </div>
       </div>
+      Status Message
     </form>
   );
 }
