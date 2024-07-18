@@ -184,6 +184,7 @@ export async function updateInvoice(
     amount: formData.get('amount'),
     status: formData.get('status'),
   });
+  console.log('validatedFields', validatedFields);
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
@@ -219,7 +220,7 @@ export async function deleteInvoice(id: string) {
     return { message: 'Database Error: Failed to delete invoice.' };
   }
 }
-export async function deleteCustomer(id: string) {
+export async function deleteCustomer(id: string, name: string) {
   try {
     console.log('Deleting customer with ID:', id);
 
@@ -235,9 +236,9 @@ export async function deleteCustomer(id: string) {
     );
 
     if (pendingInvoices.length > 0) {
-      console.log('Cannot delete customer due to pending invoices.');
+      console.log('Cannot delete  due to pending invoices.');
       return {
-        message: 'Cannot delete customer with pending invoices.',
+        message: `Cannot delete  ${name} with pending invoices.`,
         error: true,
       };
     }
@@ -264,13 +265,12 @@ export async function deleteCustomer(id: string) {
 
     // Redirect to dashboard/customers
     redirect('/dashboard/customers');
-    return { message: 'Customer and their invoices successfully deleted.' };
   } catch (error) {
     console.error('Error deleting customer:', error);
-    return {
-      message: 'Database Error: Failed to delete customer and their invoices.',
-    };
   }
+  return {
+    message: `Customer ${name} and their invoices successfully deleted.`,
+  };
 }
 
 export async function updateCustomer(
