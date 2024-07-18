@@ -305,6 +305,9 @@ export async function fetchCustomerById(id: string) {
   }
 }
 export async function fetchCustomers() {
+  // Add noStore() here to prevent the response from being cached.
+  // This is equivalent to in fetch(..., {cache: 'no-store'}).
+  noStore();
   try {
     // const data = await sql<CustomerField>
     const data = await sql<CustomersTableType>`
