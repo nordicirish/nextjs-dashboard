@@ -27,14 +27,19 @@ const InvoiceFormSchema = z.object({
 
 const CustomerFormSchema = z.object({
   id: z.string(),
-  name: z.string({
-    required_error: 'Please enter a name for the customer.',
-  }),
+  name: z
+    .string()
+    .trim()
+    .min(3, { message: 'Username must be at least 3 characters' }),
   email: z.string().email({
     message: 'Please enter a valid email address for the customer.',
   }),
   image_url: z.string(),
-  image: z.instanceof(File).nullable(), // Validate the image field as a File object ,
+  image: z
+    .instanceof(File)
+    .refine((file) => file !== undefined && file.size < 5 * 1024 * 1024, {
+      message: 'Please upload an image less than 5MB.',
+    }),
 });
 // omit id and date fields
 const CreateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
@@ -48,6 +53,7 @@ const UpdateCustomer = CustomerFormSchema.omit({
   image: true,
 });
 
+// Error state types for forms
 export type InvoiceState = {
   errors?: {
     customerId?: string[];
@@ -100,7 +106,7 @@ export async function createCustomer(
   formData: FormData,
 ) {
   const validatedFields = CreateCustomer.safeParse({
-    name: formData.get('name'),
+    name: formData.get('username'),
     email: formData.get('email'),
     image: formData.get('image'),
   });
@@ -127,7 +133,6 @@ export async function createCustomer(
     console.error('Error creating customer:', error);
     throw error;
   }
-
   // Revalidate the customer list and redirect to the customer list page
   revalidatePath('/dashboard/customers');
   revalidatePath('/dashboard/invoices');
@@ -168,7 +173,6 @@ export async function createInvoice(
       message: 'Database Error: Failed to Create Invoice.',
     };
   }
-
   revalidatePath('/dashboard/invoices');
   revalidatePath('/dashboard/customers');
   redirect('/dashboard/invoices');
