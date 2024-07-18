@@ -168,7 +168,7 @@ export async function createInvoice(
       message: 'Database Error: Failed to Create Invoice.',
     };
   }
-  
+
   revalidatePath('/dashboard/invoices');
   revalidatePath('/dashboard/customers');
   redirect('/dashboard/invoices');
@@ -203,6 +203,7 @@ export async function updateInvoice(
   }
 
   revalidatePath('/dashboard/invoices');
+  revalidatePath('/dashboard/customers');
   redirect('/dashboard/invoices');
 }
 
