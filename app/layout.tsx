@@ -1,6 +1,8 @@
 import '@/app/ui/global.css';
 import { inter } from '@/app/ui/fonts';
 import { Metadata } from 'next';
+import { MessageProvider } from '@/app/context/MessageContext';
+import MessageList from '@/app/components/MessageList';
 
 export const metadata: Metadata = {
   title: {
@@ -18,7 +20,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>{children}</body>
+      <body className={`${inter.className} antialiased`}>
+        <MessageProvider>
+          <MessageList />
+          {children}
+        </MessageProvider>
+      </body>
     </html>
   );
 }
