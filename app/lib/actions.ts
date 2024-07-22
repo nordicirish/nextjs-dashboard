@@ -163,6 +163,110 @@ export async function createCustomer(
     },
   };
 }
+
+export async function updateCustomer(
+  id: string,
+  prevState: CustomerState,
+  formData: FormData,
+) {
+  const validatedFields = UpdateCustomer.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    // image_url: formData.get('image_url'),
+    // image: formData.get('image'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Customer.',
+    };
+  }
+  const { name, email } = validatedFields.data;
+  // const image = formData.get('image');
+  // if (!(image instanceof File)) {
+  //   return {
+  //     message: 'Invalid image file.',
+  //   };
+  // }
+  // try {
+  //   const blob = await put(image.name, image, { access: 'public' });
+  //   const image_url = blob.url;
+  //   console.log('Blob URL:', image_url);
+  try {
+    await sql`
+    UPDATE customers
+    SET name = ${name}, email = ${email} 
+    WHERE id = ${id}
+  `;
+  } catch (error) {
+    return { message: 'Database Error: Failed to update customer.' };
+  }
+  // } catch (error: any) {
+  //   console.error('Error editing customer:', error);
+  //   throw error;
+  // }
+  revalidatePath('/dashboard/customers');
+  return {
+    success: true,
+    result: {
+      message: `Customer ${name} details updated successfully!`,
+    },
+  };
+}
+export async function deleteCustomer(id: string, name: string) {
+  try {
+    console.log('Deleting customer with ID:', id);
+
+    // Check if there are any pending invoices for the customer
+    const { rows: pendingInvoices } = await sql`
+      SELECT 1 as pending FROM invoices
+      WHERE customer_id = ${id} AND status = 'pending'
+    `;
+
+    console.log(
+      'Pending invoices check:',
+      JSON.stringify(pendingInvoices, null, 2),
+    );
+
+    if (pendingInvoices.length > 0) {
+      console.log('Cannot delete  due to pending invoices.');
+      return {
+        message: `Cannot delete  ${name} with pending invoices.`,
+        error: true,
+      };
+    }
+
+    // Delete all invoices associated with the customer
+    await sql`
+      DELETE FROM invoices
+      WHERE customer_id = ${id}
+    `;
+
+    console.log('Deleted invoices for customer ID:', id);
+
+    // Delete the customer
+    await sql`
+      DELETE FROM customers
+      WHERE id = ${id}
+    `;
+  
+    // Revalidate paths
+    revalidatePath('/dashboard/customers');
+    revalidatePath('/dashboard/invoices');
+
+    // Redirect to dashboard/customers
+    redirect('/dashboard/customers');
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+  }
+  return {
+    message: `Customer ${name} and their invoices successfully deleted.`,
+  };
+}
+
+// Invoice Actions
+
 export async function createInvoice(
   prevState: InvoiceState,
   formData: FormData,
@@ -248,101 +352,4 @@ export async function deleteInvoice(id: string) {
     return { message: 'Database Error: Failed to delete invoice.' };
   }
 }
-export async function deleteCustomer(id: string, name: string) {
-  try {
-    console.log('Deleting customer with ID:', id);
 
-    // Check if there are any pending invoices for the customer
-    const { rows: pendingInvoices } = await sql`
-      SELECT 1 as pending FROM invoices
-      WHERE customer_id = ${id} AND status = 'pending'
-    `;
-
-    console.log(
-      'Pending invoices check:',
-      JSON.stringify(pendingInvoices, null, 2),
-    );
-
-    if (pendingInvoices.length > 0) {
-      console.log('Cannot delete  due to pending invoices.');
-      return {
-        message: `Cannot delete  ${name} with pending invoices.`,
-        error: true,
-      };
-    }
-
-    // Delete all invoices associated with the customer
-    await sql`
-      DELETE FROM invoices
-      WHERE customer_id = ${id}
-    `;
-
-    console.log('Deleted invoices for customer ID:', id);
-
-    // Delete the customer
-    await sql`
-      DELETE FROM customers
-      WHERE id = ${id}
-    `;
-
-    console.log('Deleted customer with ID:', id);
-
-    // Revalidate paths
-    revalidatePath('/dashboard/customers');
-    revalidatePath('/dashboard/invoices');
-
-    // Redirect to dashboard/customers
-    redirect('/dashboard/customers');
-  } catch (error) {
-    console.error('Error deleting customer:', error);
-  }
-  return {
-    message: `Customer ${name} and their invoices successfully deleted.`,
-  };
-}
-
-export async function updateCustomer(
-  id: string,
-  prevState: CustomerState,
-  formData: FormData,
-) {
-  const validatedFields = UpdateCustomer.safeParse({
-    name: formData.get('name'),
-    email: formData.get('email'),
-    // image_url: formData.get('image_url'),
-    // image: formData.get('image'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Update Customer.',
-    };
-  }
-  const { name, email } = validatedFields.data;
-  // const image = formData.get('image');
-  // if (!(image instanceof File)) {
-  //   return {
-  //     message: 'Invalid image file.',
-  //   };
-  // }
-  // try {
-  //   const blob = await put(image.name, image, { access: 'public' });
-  //   const image_url = blob.url;
-  //   console.log('Blob URL:', image_url);
-  try {
-    await sql`
-    UPDATE customers
-    SET name = ${name}, email = ${email} 
-    WHERE id = ${id}
-  `;
-  } catch (error) {
-    return { message: 'Database Error: Failed to update customer.' };
-  }
-  // } catch (error: any) {
-  //   console.error('Error editing customer:', error);
-  //   throw error;
-  // }
-  revalidatePath('/dashboard/customers');
-  redirect('/dashboard/customers');
-}
