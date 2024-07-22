@@ -12,6 +12,10 @@ import { Customer } from '@/app/lib/definitions';
 import { updateCustomer } from '@/app/lib/actions';
 import { useFormState } from 'react-dom';
 import Image from 'next/image';
+import { useMessage } from '@/app/context/MessageContext';
+import RedirectOnSuccess from './RedirectOnSuccess';
+
+
 
 export default function EditCustomerForm({ customer }: { customer: Customer }) {
   // use binding to create a new function that uses the same id for this
@@ -19,6 +23,12 @@ export default function EditCustomerForm({ customer }: { customer: Customer }) {
   const initialState = { message: null, errors: {} };
   const updateCustomerWithId = updateCustomer.bind(null, customer.id);
   const [state, dispatch] = useFormState(updateCustomerWithId, initialState);
+  const { addMessage } = useMessage();
+ <RedirectOnSuccess
+   success={state.success || false}
+   resultMessage={state.result?.message || ''}
+   addMessage={addMessage}
+ />;
 
   return (
     <form action={dispatch}>
@@ -102,7 +112,7 @@ export default function EditCustomerForm({ customer }: { customer: Customer }) {
           </div>
         </div>
       </div>
-      <div className="mt-6 flex flex-row justify-center items-center gap-4 md:justify-end">
+      <div className="mt-6 flex flex-row items-center justify-center gap-4 md:justify-end">
         <Link
           href="/dashboard/customers"
           className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"

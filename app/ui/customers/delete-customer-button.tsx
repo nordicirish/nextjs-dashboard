@@ -2,6 +2,7 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { deleteCustomer } from '@/app/lib/actions';
 import { useMessage } from '@/app/context/MessageContext';
+import RedirectOnSuccess from './RedirectOnSuccess';
 
 export function DeleteCustomer({ id , name }: { id: string, name: string }) {
   const { addMessage } = useMessage();
@@ -10,9 +11,15 @@ export function DeleteCustomer({ id , name }: { id: string, name: string }) {
     event.preventDefault();
     const result = await deleteCustomer(id, name);
     console.log(result);
-
     if ('message' in result) {
       addMessage(result.message, result.error ? 'error' : 'success');
+      return (
+        <RedirectOnSuccess
+          success={!result.error}
+          resultMessage={result.message}
+          addMessage={addMessage}
+        />
+      );
     } else {
       addMessage('Unexpected response from delete operation.', 'error');
     }
@@ -29,6 +36,7 @@ export function DeleteCustomer({ id , name }: { id: string, name: string }) {
           <TrashIcon className="w-5" />
         </button>
       </form>
+      
     </div>
   );
 }

@@ -4,21 +4,17 @@ import { Button } from '@/app/ui/button';
 import { createCustomer } from '@/app/lib/actions';
 import { useFormState } from 'react-dom';
 import { useMessage } from '@/app/context/MessageContext';
-import { useEffect } from 'react';
-import { redirect } from 'next/navigation';
+import RedirectOnSuccess from './RedirectOnSuccess';
 
 export default function Form() {
   const initialState = { message: null, errors: {} };
   const [state, dispatch] = useFormState(createCustomer, initialState);
   const { addMessage } = useMessage();
-
-  useEffect(() => {
-    if (state.success && state.result?.message) {
-      addMessage(state.result.message, 'success');
-      // Ensure redirect happens only once
-      redirect('/dashboard/customers');
-    }
-  }, [state.success, state.result?.message, addMessage]);
+  <RedirectOnSuccess
+    success={state.success || false}
+    resultMessage={state.result?.message || ''}
+    addMessage={addMessage}
+  />;
 
   // useEffect(() => {
   //   if (state.errors) {
