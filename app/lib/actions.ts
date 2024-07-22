@@ -25,6 +25,7 @@ const InvoiceFormSchema = z.object({
   date: z.string(),
 });
 
+// Use Zod to validate the expected types
 const CustomerFormSchema = z.object({
   id: z.string(),
   name: z
@@ -34,10 +35,15 @@ const CustomerFormSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address for the customer.',
   }),
-  image_url: z.string(),
+  // image_url: z.string(),
   image: z
-    .instanceof(File)
-    .refine((file) => file !== undefined && file.size < 5 * 1024 * 1024, {
+    .instanceof(File, { message: 'An image file is required.' })
+    .refine((file) => file.size > 0, {
+      // Ensure the file size is greater than 0
+      message: 'An image file is required.',
+    })
+    .refine((file) => file.size < 5 * 1024 * 1024, {
+      // Ensure the file size is less than 5MB
       message: 'Please upload an image less than 5MB.',
     }),
 });
@@ -45,11 +51,10 @@ const CustomerFormSchema = z.object({
 const CreateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
 // Use Zod to update the expected types
 const UpdateInvoice = InvoiceFormSchema.omit({ id: true, date: true });
-const CreateCustomer = CustomerFormSchema.omit({ id: true, image_url: true });
+const CreateCustomer = CustomerFormSchema.omit({ id: true });
 // omit image_url and image fields from the expected types until image updating is implemented
 const UpdateCustomer = CustomerFormSchema.omit({
   id: true,
-  image_url: true,
   image: true,
 });
 
@@ -63,13 +68,23 @@ export type InvoiceState = {
   message?: string | null;
 };
 export type CustomerState = {
+  // form validation errors
   errors?: {
     name?: string[];
     email?: string[];
     image?: string[];
-    image_url?: string[];
   };
   message?: string | null;
+  // form submission result and success status
+  success?: boolean;
+  result?: {
+    message?: string;
+    errors?: {
+      name?: string[];
+      email?: string[];
+      image?: string[];
+    };
+  };
 };
 //connect the auth logic with your login form
 export async function authenticate(
@@ -101,44 +116,53 @@ async function uploadImage(image: File): Promise<string> {
     throw new Error('Image upload failed');
   }
 }
+
 export async function createCustomer(
   prevState: CustomerState,
   formData: FormData,
-) {
+): Promise<CustomerState> {
+  // Parse and validate form data
   const validatedFields = CreateCustomer.safeParse({
+    id: formData.get('id'),
     name: formData.get('username'),
     email: formData.get('email'),
     image: formData.get('image'),
   });
 
   if (!validatedFields.success) {
+    // Extract field errors from validation error
+    const errors = validatedFields.error.flatten().fieldErrors;
     return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Create Customer.',
+      success: false,
+      errors,
+      message: 'Validation failed. Please correct the errors and try again.',
     };
   }
-  const { name, email } = validatedFields.data;
-  const image = formData.get('image');
 
-  if (!(image instanceof File)) {
-    return {
-      message: 'Invalid image file.',
-    };
-  }
+  const { name, email, image } = validatedFields.data;
 
   try {
     const image_url = await uploadImage(image);
     await insertCustomer(name, email, image_url);
   } catch (error: any) {
     console.error('Error creating customer:', error);
-    throw error;
+    return {
+      success: false,
+      message: 'Error creating customer. Please try again.',
+    };
   }
-  // Revalidate the customer list and redirect to the customer list page
+
+  // Revalidate the customer list
   revalidatePath('/dashboard/customers');
   revalidatePath('/dashboard/invoices');
-  redirect(`/dashboard/customers`);
-}
 
+  return {
+    success: true,
+    result: {
+      message: `Customer ${name} created successfully!`,
+    },
+  };
+}
 export async function createInvoice(
   prevState: InvoiceState,
   formData: FormData,
